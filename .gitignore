@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+
+.venv/
+__pycache__/
+
+chroma_db/
+notes/
+dist/
+*.egg-info/

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "employee-hr-assistant"
+version = "0.1.0"
+description = "A PDF-based employee HR assistant"
+requires-python = "==3.12.*"
+authors = [{name = "Ghassen Saidi"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = [
+    "PyMuPDF",
+    "chromadb",
+    "openai",
+    "python-dotenv"
+]
+
+[project.urls]
+Repository = "https://github.com/...ongoing"
+LinkedIn = "https://www.linkedin.com/in/ghassensaidi/"
+
+[project.scripts]
+hr-assistant = "employee_hr_assistant.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
