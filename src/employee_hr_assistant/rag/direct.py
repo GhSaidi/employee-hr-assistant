@@ -10,7 +10,7 @@ from chromadb.errors import NotFoundError
 from dotenv import load_dotenv
 from openai import OpenAI
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path.cwd()
 
 load_dotenv(PROJECT_ROOT / ".env")
 

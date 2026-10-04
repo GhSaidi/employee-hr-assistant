@@ -1,11 +1,19 @@
+# Local configuration
 .env
 .env.*
 !.env.example
 
-.venv/
+# Python environment and cache
+venv/
 __pycache__/
 
+# Local data and notes
 chroma_db/
 notes/
+
+# Build artifacts
 dist/
 *.egg-info/
+
+# macOS
+.DS_Store

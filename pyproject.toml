@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/...ongoing"
+Repository = "https://github.com/GhSaidi/employee-hr-assistant"
 LinkedIn = "https://www.linkedin.com/in/ghassensaidi/"
 
 [project.scripts]

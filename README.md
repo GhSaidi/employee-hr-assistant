@@ -26,8 +26,8 @@ Tested with Python 3.12.14 and setuptools 84.0.0 on macOS.
 Clone the repository:
 
 ```bash
-git clone https://github.com/username/project-name.git
-cd project-name
+git clone https://github.com/GhSaidi/employee-hr-assistant.git
+cd employee-hr-assistant
 ```
 
 Create and activate a virtual environment:
@@ -35,22 +35,88 @@ Create and activate a virtual environment:
 ### Linux / macOS
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
+python3.12 -m venv venv
+source venv/bin/activate
 ```
 
-Install dependencies:
+Install the package and its dependencies, as defined in `pyproject.toml`:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install .
+```
+
+For development, use an editable installation instead:
+
+```bash
+python -m pip install -e .
+```
+
+### Configuration
+
+Copy the configuration template:
+
+```bash
+cp .env.example .env
+```
+
+Set your OpenAI API key in `.env`:
+
+```dotenv
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ## Quick Start
 
-Run the application:
+Run the following commands from the repository root, with the virtual environment activated.
+
+Index the PDF documents:
 
 ```bash
-python src/employee_hr_assistant/main.py
+hr-assistant index
+```
+
+Start the chatbot:
+
+```bash
+hr-assistant chat
+```
+
+Type `exit` or `quit` to end the chat.
+
+## Build and Test the Wheel
+
+Build an installable wheel and verify that the packaged application runs correctly in a clean environment.
+
+```bash
+python -m pip install build
+```
+
+Build the source distribution and wheel distribution:
+
+```bash
+python -m build
+```
+
+Install the wheel (Use the generated wheel filename if the package version changes):
+
+```bash
+python -m pip install dist/employee_hr_assistant-0.1.0-py3-none-any.whl
+python -m pip check
+```
+
+Verify the installed package location:
+
+```bash
+python -c "import employee_hr_assistant; print(employee_hr_assistant.__file__)"
+```
+
+The path should point to the environment's `site-packages` directory.
+
+Run from the repository root:
+
+```bash
+hr-assistant index
+hr-assistant chat
 ```
 
 ## Project Structure
