@@ -142,7 +142,7 @@ def answer_question(
     question: str,
     collection: chromadb.Collection,
     openai_client: OpenAI,
-):
+) -> tuple[str, list[chromadb.Metadata]]:
     question_embedding = create_embeddings(openai_client, [question])[0]
 
     results = collection.query(
@@ -184,10 +184,7 @@ def answer_question(
         input=f"PDF passages:\n\n{context}\n\nQuestion: {question}",
     )
 
-    print(f"\nAnswer:\n{response.output_text}\n")
-    print("Retrieved sources:")
-    for number, metadata in enumerate(metadatas, start=1):
-        print(f"[{number}] {metadata['source']}, page {metadata['page']}")
+    return response.output_text, metadatas
 
 
 def chat():
@@ -219,4 +216,14 @@ def chat():
         if not question:
             continue
 
-        answer_question(question, collection, openai_client)
+        answer, sources = answer_question(
+            question, collection, openai_client
+        )
+
+        print(f"\nAnswer:\n{answer}\n")
+        print("Retrieved sources:")
+        for number, metadata in enumerate(sources, start=1):
+            print(
+                f"[{number}] {metadata['source']}, "
+                f"page {metadata['page']}"
+            )
