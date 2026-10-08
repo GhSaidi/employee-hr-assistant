@@ -144,10 +144,14 @@ employee-hr-assistant/
 │   └── employee_hr_assistant/
 │       ├── __init__.py
 │       ├── main.py
+│       ├── api/
+│       │   ├── __init__.py
+│       │   └── app.py
 │       └── rag/
 │           ├── __init__.py
 │           └── direct.py
-├── docs/
+├── data/
+│   └── documents/
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml

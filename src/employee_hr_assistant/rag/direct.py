@@ -14,7 +14,7 @@ PROJECT_ROOT = Path.cwd()
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-DOCUMENTS_DIR = PROJECT_ROOT / "docs"
+DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 DATABASE_DIR = PROJECT_ROOT / "chroma_db"
 COLLECTION_NAME = "pdf_chunks"
 
