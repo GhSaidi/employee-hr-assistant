@@ -83,6 +83,23 @@ hr-assistant chat
 
 Type `exit` or `quit` to end the chat.
 
+## API usage
+
+Start the development server from the repository root:
+
+```bash
+python -m uvicorn employee_hr_assistant.api.app:app --reload
+```
+
+Open <http://127.0.0.1:8000/docs> to explore and test the API.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/health` | Check whether the API responds |
+| POST | `/chat` | Ask a question and receive an answer with sources |
+
+The `/chat` endpoint requires a configured `OPENAI_API_KEY` and indexed PDFs, as described in Configuration. Each question is processed independently, without conversation history.
+
 ## Build and Test the Wheel
 
 Build an installable wheel and verify that the packaged application runs correctly in a clean environment.
