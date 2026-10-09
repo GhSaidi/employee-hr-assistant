@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Employee HR Assistant — Frontend
 
-## Getting Started
+Next.js frontend for the Employee HR Assistant, built with React and TypeScript.
 
-First, run the development server:
+The `/api/chat` route forwards questions to the Python FastAPI backend and returns its responses. The chatbot interface is under development; the homepage currently displays the Next.js starter page.
+
+For backend installation, document indexing, and CLI usage, see the [main README](../README.md).
+
+## Requirements
+
+- Node.js compatible with the installed Next.js version
+- npm
+- The FastAPI backend configured and running
+
+Tested with Node.js v24.21.0 and npm 11.19.0
+
+## Installation
+
+From the repository root:
+
+```bash
+cd frontend
+npm ci
+```
+
+`npm ci` installs the dependencies recorded in `package-lock.json`.
+
+## Configuration
+
+From the `frontend` directory, copy the configuration template:
+
+```bash
+cp .env.example .env.local
+```
+
+Set the backend address in `.env.local`:
+
+```dotenv
+BACKEND_URL=http://127.0.0.1:8000
+```
+
+Keep `.env.local` in the `frontend` directory, alongside `package.json`.
+
+`BACKEND_URL` is read by the Next.js development server when forwarding requests to FastAPI. The OpenAI API key is configured separately in the backend's repository-root `.env` file.
+
+## Local Development
+
+Start the FastAPI backend in a separate terminal, from the repository root with the Python virtual environment activated:
+
+```bash
+python -m uvicorn employee_hr_assistant.api.app:app --reload
+```
+
+Then start Next.js from the `frontend` directory:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Both servers must be running to test the API integration.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Integration
 
-## Learn More
+Send a POST request to the Next.js `/api/chat` endpoint:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+curl -i http://localhost:3000/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "What is the parental leave policy?"}'
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Next.js forwards the request to the backend's `/chat` endpoint. FastAPI validates the question and generates an answer using the indexed documents.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Successful responses contain `answer` and `sources` fields. Backend JSON responses and HTTP status codes are passed back to the caller.
 
-## Deploy on Vercel
+A valid question requires a configured OpenAI API key and an existing document index. It makes OpenAI API calls.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To check request forwarding and validation without making an OpenAI call:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+curl -i http://localhost:3000/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question": ""}'
+```
+
+The expected response is HTTP `422`, because the question is empty.
+
+## Project Structure
+
+```text
+frontend/
+├── public/
+├── src/
+│   └── app/
+│       ├── api/
+│       │   └── chat/
+│       │       └── route.ts 
+│       ├── favicon.ico
+│       ├── globals.css
+│       ├── layout.tsx
+│       └── page.tsx
+├── .env.example
+├── .gitignore
+├── AGENTS.md
+├── eslint.config.mjs
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── README.md
+└── tsconfig.json 
+```
