@@ -105,7 +105,7 @@ The `/chat` endpoint requires a configured `OPENAI_API_KEY` and indexed PDFs, as
 
 ## Frontend Development
 
-The frontend currently displays the Next.js starter page and provides a `/api/chat` endpoint that forwards POST requests to the FastAPI backend.
+The frontend provides a chatbot interface for submitting questions and viewing answers with document sources, including loading and error states. Its `/api/chat` endpoint forwards POST requests to the FastAPI backend.
 
 Start the backend as described in [API usage](#api-usage), with the Python virtual environment activated. Leave it running.
 
