@@ -2,7 +2,7 @@
 
 Next.js frontend for the Employee HR Assistant, built with React and TypeScript.
 
-The `/api/chat` route forwards questions to the Python FastAPI backend and returns its responses. The chatbot interface is under development; the homepage currently displays the Next.js starter page.
+The `/api/chat` route forwards questions to the Python FastAPI backend and returns its responses. The web interface lets users submit questions and view answers with document sources. It displays loading and error states. Each question is processed independently, without conversation history.
 
 For backend installation, document indexing, and CLI usage, see the [main README](../README.md).
 
@@ -93,14 +93,16 @@ The expected response is HTTP `422`, because the question is empty.
 frontend/
 ├── public/
 ├── src/
-│   └── app/
-│       ├── api/
-│       │   └── chat/
-│       │       └── route.ts 
-│       ├── favicon.ico
-│       ├── globals.css
-│       ├── layout.tsx
-│       └── page.tsx
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── chat/
+│   │   │       └── route.ts 
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   └── components/
+│       └── Chat.tsx
 ├── .env.example
 ├── .gitignore
 ├── AGENTS.md
