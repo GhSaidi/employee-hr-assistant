@@ -11,10 +11,13 @@ authors = [{name = "Ghassen Saidi"}]
 license = {file = "LICENSE"}
 readme = "README.md"
 dependencies = [
-    "PyMuPDF",
     "chromadb",
+    "fastapi",
     "openai",
-    "python-dotenv"
+    "pydantic>=2,<3",
+    "PyMuPDF",
+    "python-dotenv",
+    "uvicorn[standard]"
 ]
 
 [project.urls]

@@ -14,7 +14,7 @@ PROJECT_ROOT = Path.cwd()
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-DOCUMENTS_DIR = PROJECT_ROOT / "docs"
+DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 DATABASE_DIR = PROJECT_ROOT / "chroma_db"
 COLLECTION_NAME = "pdf_chunks"
 
@@ -187,24 +187,33 @@ def answer_question(
     return response.output_text, metadatas
 
 
-def chat():
-    openai_client = get_openai_client()
+def get_indexed_collection() -> chromadb.Collection:
     chroma_client = get_chroma_client()
 
     try:
         collection = chroma_client.get_collection(COLLECTION_NAME)
-    except ValueError as exc:
+    except NotFoundError as exc:
         raise RuntimeError(
-            "No index found. Run: python main.py index"
+            "No index found. Run: hr-assistant index"
         ) from exc
 
     if collection.count() == 0:
-        raise RuntimeError("The index is empty. Re-run the index command.")
-
-    if collection.metadata.get("embedding_model") != EMBEDDING_MODEL:
         raise RuntimeError(
-            "The embedding model has changed. Re-run the index command."
+            "The index is empty. Run: hr-assistant index"
         )
+
+    metadata = collection.metadata or {}
+    if metadata.get("embedding_model") != EMBEDDING_MODEL:
+        raise RuntimeError(
+            "The embedding model has changed. Run: hr-assistant index"
+        )
+
+    return collection
+
+
+def chat():
+    openai_client = get_openai_client()
+    collection = get_indexed_collection()
 
     print("Ask questions about your PDFs. Type 'exit' to quit.")
 
