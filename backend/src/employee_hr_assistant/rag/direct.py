@@ -12,10 +12,10 @@ from openai import OpenAI
 
 PROJECT_ROOT = Path.cwd()
 
-load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(PROJECT_ROOT / "backend" / ".env")
 
 DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
-DATABASE_DIR = PROJECT_ROOT / "chroma_db"
+DATABASE_DIR = PROJECT_ROOT / "data" / "chroma_db"
 COLLECTION_NAME = "pdf_chunks"
 
 EMBEDDING_MODEL = "text-embedding-3-small"

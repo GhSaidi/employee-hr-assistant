@@ -1,18 +1,24 @@
-# Project Name
+# Employee HR Assistant
 
-> This is a project to implement and deploy an Employee HR Assistant (a chatbot), where employees ask questions about company policies and their own HR-related information.
-
+A PDF-based chatbot that helps employees find answers to questions about company policies, with references to the source documents.
 
 ## Overview
 
-**Employee HR Assistant** uses Retrieval Augmented Generation (RAG) to answer questions about documents.
+Employee HR Assistant uses Retrieval-Augmented Generation (RAG) to retrieve relevant PDF passages and generate answers grounded in those passages.
 
-The Python backend provides a command-line interface and a FastAPI API. A Next.js frontend, built with React and TypeScript, forwards chat requests to the backend. The chatbot interface is under development.
+The Python backend provides a command-line interface and a FastAPI API. A Next.js frontend, built with React and TypeScript, provides a chatbot interface and forwards requests to the backend.
+
+The current application answers questions from indexed PDFs. Access to individual employee records is a planned capability and is not implemented yet.
 
 ### Key Features
 
-- ...
-
+- PDF text extraction, chunking and indexing.
+- Persistent storage of document passages and embeddings in ChromaDB.
+- OpenAI-powered answer generation with document and page references.
+- Command-line interface for indexing documents and asking questions.
+- FastAPI endpoints with interactive API documentation.
+- Web interface with loading and error states.
+- Independent questions without conversation history.
 
 ## Requirements
 
@@ -38,8 +44,8 @@ Create and activate a virtual environment:
 ### Linux / macOS
 
 ```bash
-python3.12 -m venv venv
-source venv/bin/activate
+python3.12 -m venv backend/venv
+source backend/venv/bin/activate
 ```
 
 Install the package and its dependencies, as defined in `pyproject.toml`:
@@ -59,10 +65,10 @@ python -m pip install -e .
 Copy the configuration template:
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-Set your OpenAI API key in `.env`:
+Set your OpenAI API key in `backend/.env`:
 
 ```dotenv
 OPENAI_API_KEY=your_openai_api_key
@@ -139,79 +145,121 @@ Build an installable wheel and verify that the packaged application runs correct
 python -m pip install build
 ```
 
-Build the source distribution and wheel distribution:
+From the repository root, with `backend/venv` activated, build the source distribution and wheel into `backend/dist/`:
 
 ```bash
-python -m build
+python -m build --outdir backend/dist
 ```
 
-Install the wheel (Use the generated wheel filename if the package version changes):
+Create a fresh test environment outside the repository. Run these commands from the repository root, using a test directory that does not already exist:
 
 ```bash
-python -m pip install dist/employee_hr_assistant-0.1.0-py3-none-any.whl
-python -m pip check
+python3.12 -m venv ../project_tests-employee_hr_assistant/venv
+../project_tests-employee_hr_assistant/venv/bin/python -m pip install backend/dist/employee_hr_assistant-0.1.0-py3-none-any.whl
 ```
 
-Verify the installed package location:
+Use the generated wheel filename if the package version changes.
+
+Move outside the repository and verify the installation:
 
 ```bash
-python -c "import employee_hr_assistant; print(employee_hr_assistant.__file__)"
+cd ../project_tests-employee_hr_assistant
+venv/bin/python -m pip check
+venv/bin/python -c "import employee_hr_assistant; print(employee_hr_assistant.__file__)"
+venv/bin/hr-assistant --help
 ```
 
-The path should point to the environment's `site-packages` directory.
+The printed package path should point into the test environment's `site-packages` directory.
 
-Run from the repository root:
+To test answering questions, copy the existing database and backend configuration from the development repository. Stop both the development and test backend servers before copying the database.
+
+From `project_tests-employee_hr_assistant`, run:
 
 ```bash
-hr-assistant index
-hr-assistant chat
+mkdir -p data backend
+cp -R ../employee-hr-assistant/data/chroma_db data/
+cp -n ../employee-hr-assistant/backend/.env backend/.env
 ```
+
+These commands assume the fresh test directory created above. They copy the existing index and API-key configuration without modifying the development repository. Keep the copied `.env` private.
+
+Start the wheel-installed backend from the test directory:
+
+```bash
+venv/bin/python -m uvicorn employee_hr_assistant.api.app:app
+```
+
+Open http://127.0.0.1:8000/docs and submit a question about the indexed documents through `POST /chat`. Verify that it returns HTTP 200 with an answer and source references.
+
+The original PDFs are not required for this chat test because the copied database already contains the indexed passages. Rebuilding the index would additionally require PDFs in `data/documents/`.
+
+Stop the test server with Ctrl+C when finished.
+
+To test the command-line chatbot using the same installed wheel and copied index, run from `project_tests-employee_hr_assistant`:
+
+```bash
+venv/bin/hr-assistant chat
+```
+
+Ask a question about the indexed documents. Type `exit` or `quit` to finish.
+
+To also test rebuilding the index, first copy the PDF documents into the test directory:
+
+```bash
+cp -R ../employee-hr-assistant/data/documents data/
+venv/bin/hr-assistant index
+venv/bin/hr-assistant chat
+```
+
+Indexing rebuilds the test database and makes OpenAI embedding API requests, which incur usage costs. The development database remains unchanged.
 
 ## Project Structure
 
 ```text
 employee-hr-assistant/
+├── backend/
+│   ├── src/
+│   │   └── employee_hr_assistant/
+│   │       ├── api/
+│   │       │   ├── __init__.py
+│   │       │   └── app.py
+│   │       ├── rag/
+│   │       │   ├── __init__.py
+│   │       │   └── direct.py
+│   │       ├── __init__.py
+│   │       └── main.py
+│   └── .env.example
 ├── data/
-│   └── documents/
+│   ├── documents/
+│   └── chroma_db/
 ├── frontend/
-├── src/
-│   └── employee_hr_assistant/
-│       ├── __init__.py
-│       ├── main.py
-│       ├── api/
-│       │   ├── __init__.py
-│       │   └── app.py
-│       └── rag/
-│           ├── __init__.py
-│           └── direct.py
-├── .env.example
 ├── .gitignore
 ├── LICENSE
 ├── pyproject.toml
 └── README.md
 ```
 
+Local environment files, virtual environments and build outputs are omitted from this tree. Backend distributions are generated in `backend/dist/`.
+
 ## Contributing
 
 Contributions are welcome.
 
-1. Fork the repository.
-2. Create a feature branch:
+1. Fork the repository and create a feature branch:
 
-```bash
-git checkout -b feature/my-feature
-```
+   ```bash
+   git switch -c feature/my-feature
+   ```
 
-3. Make your changes.
-4. Add or update tests.
-5. Run the test suite.
-6. Commit your changes:
+2. Make your changes and update the relevant documentation.
+3. Verify the affected functionality. For backend changes, follow the wheel build and testing instructions above. For frontend changes, follow the checks in the [frontend README](frontend/README.md).
+4. Review and stage your changes, then commit your changes:
 
-```bash
-git commit -m "Add my feature"
-```
+   ```bash
+   git commit -m "feat: Add my feature"
+   ```
 
-7. Push the branch and open a pull request.
+5. Push your branch and open a pull request.
 
 ## License
 

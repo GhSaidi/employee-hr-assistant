@@ -41,11 +41,11 @@ BACKEND_URL=http://127.0.0.1:8000
 
 Keep `.env.local` in the `frontend` directory, alongside `package.json`.
 
-`BACKEND_URL` is read by the Next.js development server when forwarding requests to FastAPI. The OpenAI API key is configured separately in the backend's repository-root `.env` file.
+`BACKEND_URL` is read by the Next.js development server when forwarding requests to FastAPI. The OpenAI API key is configured separately in `backend/.env`, relative to the repository root.
 
 ## Local Development
 
-Start the FastAPI backend in a separate terminal, from the repository root with the Python virtual environment activated:
+Start the FastAPI backend in a separate terminal, from the repository root with `backend/venv` activated:
 
 ```bash
 python -m uvicorn employee_hr_assistant.api.app:app --reload
