@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: employee-hr-assistant-backend:dev
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: employee-hr-assistant-frontend:dev
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend

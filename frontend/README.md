@@ -43,6 +43,14 @@ Keep `.env.local` in the `frontend` directory, alongside `package.json`.
 
 `BACKEND_URL` is read by the Next.js development server when forwarding requests to FastAPI. The OpenAI API key is configured separately in `backend/.env`, relative to the repository root.
 
+## Run with Docker Compose
+
+To run the frontend and backend together in containers, follow [Run with Docker Compose](../README.md#run-with-docker-compose) in the main README.
+
+The frontend Dockerfile uses a multi-stage build and Next.js standalone output. Docker Compose supplies `BACKEND_URL=http://backend:8000`; `frontend/.env.local` is not required for this setup.
+
+The instructions below describe running the frontend locally without Docker.
+
 ## Local Development
 
 Start the FastAPI backend in a separate terminal, from the repository root with `backend/venv` activated:
@@ -106,6 +114,7 @@ frontend/
 ├── .env.example
 ├── .gitignore
 ├── AGENTS.md
+├── Dockerfile
 ├── eslint.config.mjs
 ├── next.config.ts
 ├── package-lock.json

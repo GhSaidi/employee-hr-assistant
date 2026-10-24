@@ -137,6 +137,93 @@ Both servers must be running for chat requests to work. Answer generation also r
 
 See the [frontend README](frontend/README.md) for frontend configuration, API integration, and project structure.
 
+## Run with Docker Compose
+
+Docker Compose runs the FastAPI backend and Next.js frontend in separate containers.
+
+### Prerequisites
+
+- Docker Engine and Docker Compose available and running. On macOS, Docker Desktop provides both.
+- An OpenAI API key configured in `backend/.env`.
+- A document index in `data/chroma_db/`. For first-time setup, follow [Index Documents — Operator CLI](#index-documents--operator-cli) below before starting the application.
+
+The current version answers questions using pre-indexed documents. The web interface and HTTP API do not provide file uploads or indexing.
+
+Tested with Docker Engine 29.8.2 and Docker Compose 5.5.1 on macOS.
+
+### Initial Configuration
+
+From the repository root, create the backend environment file if it does not already exist:
+
+```bash
+cp -n backend/.env.example backend/.env
+```
+
+Set `OPENAI_API_KEY` in `backend/.env`.
+
+Compose supplies the frontend's `BACKEND_URL` automatically. A frontend `.env.local` file is not required for this Docker setup.
+
+### Start the Application
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+- Web interface: http://localhost:3000
+- Backend API documentation: http://localhost:8000/docs
+
+To run in the background instead:
+
+```bash
+docker compose up --build -d
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
+
+### Stop the Application
+
+```bash
+docker compose down
+```
+
+This removes the containers and Compose network. The images and local `data/` folder are preserved.
+
+### Data Storage
+
+Compose mounts the repository's `data/` directory at `/app/data` inside the backend container.
+
+PDFs and ChromaDB files are not included in either image. Database changes made through the mount persist in the local `data/chroma_db/` directory.
+
+### Index Documents — Operator CLI
+
+Indexing is a separate operator task, not an HTTP API or web-interface feature.
+
+For initial setup, or when deliberately rebuilding the index, place PDFs in `data/documents/`. Stop the application before rebuilding:
+
+```bash
+docker compose down
+docker compose build backend
+docker compose run --rm backend hr-assistant index
+```
+
+This rebuilds the collection in `data/chroma_db/` and makes billable OpenAI embedding requests. Do not run it for ordinary application restarts.
+
+After indexing finishes successfully, start the application:
+
+```bash
+docker compose up -d
+```
+
+Local PDF ingestion is implemented through the CLI. User uploads and automatically triggered ingestion are planned for a later stage.
+
 ## Build and Test the Wheel
 
 Build an installable wheel and verify that the packaged application runs correctly in a clean environment.
@@ -228,12 +315,16 @@ employee-hr-assistant/
 │   │       │   └── direct.py
 │   │       ├── __init__.py
 │   │       └── main.py
-│   └── .env.example
+│   ├── .env.example
+│   └── Dockerfile
 ├── data/
 │   ├── documents/
 │   └── chroma_db/
 ├── frontend/
+│   └── Dockerfile
+├── .dockerignore
 ├── .gitignore
+├── compose.yaml
 ├── LICENSE
 ├── pyproject.toml
 └── README.md

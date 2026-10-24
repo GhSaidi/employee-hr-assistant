@@ -1,0 +1,40 @@
+# Git metadata
+.git/
+
+# Local environment configuration
+**/.env*
+!**/.env.example
+
+# Python environments and generated files
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
+
+# Build artifacts
+**/build/
+**/dist/
+
+# Frontend dependencies and generated files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/.vercel/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Frontend logs and local certificates
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+frontend/*.pem
+
+# Local data and notes
+data/
+notes/
+
+# Editor and macOS files
+**/.vscode/
+**/.DS_Store
