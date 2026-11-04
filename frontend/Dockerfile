@@ -13,6 +13,11 @@ FROM node:24-bookworm-slim AS runner
 
 WORKDIR /app
 
+# Remove npm from the production runtime.
+# The standalone Next.js server only needs Node.js.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
