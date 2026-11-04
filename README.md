@@ -1,12 +1,14 @@
 # Employee HR Assistant
 
-A PDF-based chatbot that helps employees find answers to questions about company policies, with references to the source documents.
+A publicly deployed, PDF-based HR policy assistant that uses Retrieval-Augmented Generation (RAG) to answer employee questions with references to source documents.
+
+**Live demo:** [hr-assistant.ghassensaidi.com](https://hr-assistant.ghassensaidi.com/)
 
 ## Overview
 
-Employee HR Assistant uses Retrieval-Augmented Generation (RAG) to retrieve relevant PDF passages and generate answers grounded in those passages.
+For each question, the backend retrieves relevant passages from the indexed PDFs and generates an answer grounded in that evidence.
 
-The Python backend provides a command-line interface and a FastAPI API. A Next.js frontend, built with React and TypeScript, provides a chatbot interface and forwards requests to the backend.
+The Python backend provides a command-line interface and a FastAPI API. A Next.js frontend, built with React and TypeScript, provides the chatbot interface and proxies requests to the backend. The demo is deployed on AWS ECS/Fargate and accessible over HTTPS through an Application Load Balancer (ALB).
 
 The current application answers questions from indexed PDFs. Access to individual employee records is a planned capability and is not implemented yet.
 
@@ -19,16 +21,62 @@ The current application answers questions from indexed PDFs. Access to individua
 - FastAPI endpoints with interactive API documentation.
 - Web interface with loading and error states.
 - Independent questions without conversation history.
+- Public HTTPS demo deployed to AWS ECS/Fargate.
+- Per-visitor and global usage quotas backed by DynamoDB in production.
+- Request-length, concurrency, and OpenAI output limits.
+
+## Architecture and AWS Deployment
+
+The production demo follows this request path:
+
+```text
+Browser
+  │ HTTPS
+  ▼
+Application Load Balancer (ACM TLS certificate)
+  │ forwards to port 3000
+  ▼
+ECS/Fargate task (Linux/ARM64)
+  ├── Next.js frontend (port 3000)
+  │     └── /api/chat → FastAPI at 127.0.0.1:8000
+  └── FastAPI backend (port 8000)
+        ├── ChromaDB index downloaded from private S3 at startup
+        ├── DynamoDB usage counters
+        └── OpenAI API for embeddings and answers
+```
+
+- **Container registry and compute:** Backend and frontend images are stored in private Amazon ECR repositories and run as separate containers within the same ECS/Fargate task.
+- **Networking:** An internet-facing ALB handles HTTPS traffic and HTTP/canonical-hostname redirects. The ECS task is reachable on frontend port `3000` only from the ALB security group; backend port `8000` is not exposed to the public internet. The containers communicate over the task's loopback interface.
+- **Domain and TLS:** DNS for `hr-assistant.ghassensaidi.com` is managed through Porkbun. AWS Certificate Manager (ACM) supplies the HTTPS certificate.
+- **Data and secrets:** The Chroma index is downloaded from a private S3 object at startup. The OpenAI API key is supplied through AWS Systems Manager Parameter Store via the ECS task definition, not stored in the container image.
+- **IAM and observability:** Separate ECS task and task-execution IAM roles provide scoped application and platform permissions. Container logs are sent to Amazon CloudWatch Logs.
+
+The AWS infrastructure was configured through the AWS Console and CLI. **Infrastructure-as-code is not yet part of this repository.** The local setup instructions below do not recreate the AWS deployment automatically.
+
+### Usage Limits and Security
+
+The public demo enforces the following limits in the FastAPI backend before calling OpenAI:
+
+| Control | Production setting |
+|---|---|
+| Questions per visitor | 3 per minute; 10 per UTC day |
+| Questions across all visitors | 100 per UTC day |
+| Concurrent chats | 2 per Python process |
+| Question length | 1–2,000 characters after trimming whitespace |
+| Model output | Maximum 500 output tokens; concise answers requested |
+| OpenAI client | 20-second timeout per SDK request; automatic retries disabled |
+
+Visitor quotas are based on IP addresses, not authenticated accounts. The ALB appends the connecting client's IP to `X-Forwarded-For`; the Next.js proxy validates the ALB-appended address and forwards a new `X-Client-IP` to FastAPI. The backend validates that address and reserves the visitor-minute, visitor-day, and global-day counters in one DynamoDB transaction. Exceeded limits return HTTP `429` with `Retry-After`. If the quota store cannot be checked, the backend returns HTTP `503` without generating an answer.
+
+Locally, usage limits are **disabled by default** so a developer can use their own OpenAI API key without the public demo's DynamoDB table. Set `USAGE_LIMIT_MODE=memory` to exercise in-process quotas locally; this mode is not suitable for multi-task production deployments. ECS requires `USAGE_LIMIT_MODE=dynamodb`, a configured `USAGE_LIMIT_TABLE`, and an AWS region.
 
 ## Requirements
 
-- Python 3.12
+- Python `>=3.12.16,<3.13` (as required by `pyproject.toml`)
 - An OpenAI API key
-- Node.js and npm to run the frontend
+- Node.js and npm to run the frontend (or Docker and Docker Compose for containerized development)
 
-Tested with Python 3.12.14 and setuptools 84.0.0 on macOS.
-
-See the [frontend README](frontend/README.md) for the tested Node.js and npm versions.
+The backend was tested with Python 3.12.16, pip 26.3, and setuptools 84.2.1. The deployed frontend container runs Node.js 24.22.2. See the [frontend README](frontend/README.md) for locally tested Node.js and npm versions.
 
 ## Installation
 
@@ -107,7 +155,7 @@ Open <http://127.0.0.1:8000/docs> to explore and test the API.
 | GET | `/health` | Check whether the API responds |
 | POST | `/chat` | Ask a question and receive an answer with sources |
 
-The `/chat` endpoint requires a configured `OPENAI_API_KEY` and indexed PDFs, as described in Configuration. Each question is processed independently, without conversation history.
+The `/chat` endpoint requires a configured `OPENAI_API_KEY` and indexed PDFs, as described in Configuration. Each question is processed independently, without conversation history. Production requests are also subject to the [usage limits](#usage-limits-and-security) described above.
 
 ## Frontend Development
 
@@ -309,7 +357,9 @@ employee-hr-assistant/
 │   │   └── employee_hr_assistant/
 │   │       ├── api/
 │   │       │   ├── __init__.py
-│   │       │   └── app.py
+│   │       │   ├── app.py
+│   │       │   ├── index_storage.py
+│   │       │   └── rate_limits.py
 │   │       ├── rag/
 │   │       │   ├── __init__.py
 │   │       │   └── direct.py
@@ -321,7 +371,13 @@ employee-hr-assistant/
 │   ├── documents/
 │   └── chroma_db/
 ├── frontend/
-│   └── Dockerfile
+│   ├── src/
+│   │   ├── app/               # Pages and /api/chat proxy
+│   │   └── components/        # Chat UI
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   └── README.md
 ├── .dockerignore
 ├── .gitignore
 ├── compose.yaml
@@ -330,7 +386,7 @@ employee-hr-assistant/
 └── README.md
 ```
 
-Local environment files, virtual environments and build outputs are omitted from this tree. Backend distributions are generated in `backend/dist/`.
+Sensitive files are excluded for security, and generated files for storage efficiency and maintainability. The project structure is simplified for readability. Backend distributions are generated in `backend/dist/`.
 
 ## Contributing
 
