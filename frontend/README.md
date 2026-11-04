@@ -1,6 +1,8 @@
 # Employee HR Assistant — Frontend
 
-Next.js frontend for the Employee HR Assistant, built with React and TypeScript.
+Next.js frontend for the [Employee HR Assistant](../README.md), built with React and TypeScript.
+
+**Live demo:** [hr-assistant.ghassensaidi.com](https://hr-assistant.ghassensaidi.com/)
 
 The `/api/chat` route forwards questions to the Python FastAPI backend and returns its responses. The web interface lets users submit questions and view answers with document sources. It displays loading and error states. Each question is processed independently, without conversation history.
 
@@ -12,7 +14,7 @@ For backend installation, document indexing, and CLI usage, see the [main README
 - npm
 - The FastAPI backend configured and running
 
-Tested with Node.js v24.21.0 and npm 11.19.0
+Tested locally with Node.js 24.22.1 and npm 11.19.1. The deployed Docker runner uses Node.js 24.22.2, Next.js 16.4.4, and React 19.3.1.
 
 ## Installation
 
@@ -41,11 +43,23 @@ BACKEND_URL=http://127.0.0.1:8000
 
 Keep `.env.local` in the `frontend` directory, alongside `package.json`.
 
-`BACKEND_URL` is read by the Next.js development server when forwarding requests to FastAPI. The OpenAI API key is configured separately in the backend's repository-root `.env` file.
+`BACKEND_URL` is read by the Next.js server when forwarding requests to FastAPI. The OpenAI API key is configured separately in `backend/.env`, relative to the repository root.
+
+`CLIENT_IP_SOURCE` defaults to `local`, which supplies a loopback visitor identifier for local quota testing. The AWS deployment explicitly sets `CLIENT_IP_SOURCE=alb` so the proxy validates the client IP appended to `X-Forwarded-For` by the ALB.
+
+## Run with Docker Compose
+
+To run the frontend and backend together in containers, follow [Run with Docker Compose](../README.md#run-with-docker-compose) in the main README.
+
+The frontend Dockerfile uses a multi-stage build and Next.js standalone output. Docker Compose supplies `BACKEND_URL=http://backend:8000`; `frontend/.env.local` is not required for this setup. The final Docker image runs as the non-root `node` user and removes npm from the production runner; the builder stage still uses npm.
+
+On AWS ECS/Fargate, the frontend and backend are separate containers in the same task. The frontend uses `BACKEND_URL=http://127.0.0.1:8000` and `CLIENT_IP_SOURCE=alb`, and the public ALB forwards traffic to frontend port `3000`. Infrastructure details are in the [main README](../README.md#architecture-and-aws-deployment).
+
+The instructions below describe running the frontend locally without Docker.
 
 ## Local Development
 
-Start the FastAPI backend in a separate terminal, from the repository root with the Python virtual environment activated:
+Start the FastAPI backend in a separate terminal, from the repository root with `backend/venv` activated:
 
 ```bash
 python -m uvicorn employee_hr_assistant.api.app:app --reload
@@ -73,7 +87,7 @@ curl -i http://localhost:3000/api/chat \
 
 Next.js forwards the request to the backend's `/chat` endpoint. FastAPI validates the question and generates an answer using the indexed documents.
 
-Successful responses contain `answer` and `sources` fields. Backend JSON responses and HTTP status codes are passed back to the caller.
+Successful responses contain `answer` and `sources` fields. Backend JSON responses and HTTP status codes are passed back to the caller. The proxy preserves the backend's `Retry-After` response header (including quota-related HTTP `429` responses) and sends `Cache-Control: no-store`. In AWS, it ignores any client-supplied `X-Client-IP` value and constructs its own from the ALB-appended address.
 
 A valid question requires a configured OpenAI API key and an existing document index. It makes OpenAI API calls.
 
@@ -96,7 +110,7 @@ frontend/
 │   ├── app/
 │   │   ├── api/
 │   │   │   └── chat/
-│   │   │       └── route.ts 
+│   │   │       └── route.ts
 │   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── layout.tsx
@@ -106,10 +120,11 @@ frontend/
 ├── .env.example
 ├── .gitignore
 ├── AGENTS.md
+├── Dockerfile
 ├── eslint.config.mjs
 ├── next.config.ts
 ├── package-lock.json
 ├── package.json
 ├── README.md
-└── tsconfig.json 
+└── tsconfig.json
 ```

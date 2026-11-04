@@ -9,10 +9,13 @@ __pycache__/
 
 # Local data and notes
 chroma_db/
+chroma-index-*.tar.gz
 notes/
 
 # Build artifacts
 dist/
+build/
+frontend-build.log
 *.egg-info/
 
 # macOS
