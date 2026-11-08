@@ -73,10 +73,11 @@ Locally, usage limits are **disabled by default** so a developer can use their o
 ## Requirements
 
 - Python `>=3.12.16,<3.13` (as required by `pyproject.toml`)
+- uv for locked local backend installation (not required for Docker Compose)
 - An OpenAI API key
 - Node.js and npm to run the frontend (or Docker and Docker Compose for containerized development)
 
-The backend was tested with Python 3.12.16, pip 26.3, and setuptools 84.2.1. The deployed frontend container runs Node.js 24.22.2. See the [frontend README](frontend/README.md) for locally tested Node.js and npm versions.
+The backend was tested with Python 3.12.16 and uv 0.13.7. The deployed frontend container runs Node.js 24.22.2. See the [frontend README](frontend/README.md) for locally tested Node.js and npm versions.
 
 ## Installation
 
@@ -87,26 +88,18 @@ git clone https://github.com/GhSaidi/employee-hr-assistant.git
 cd employee-hr-assistant
 ```
 
-Create and activate a virtual environment:
-
 ### Linux / macOS
 
+From the repository root, create or synchronize `backend/venv` using the exact dependency versions recorded in `uv.lock`, then activate it:
+
 ```bash
-python3.12 -m venv backend/venv
+UV_PROJECT_ENVIRONMENT=backend/venv uv sync --locked --no-dev
 source backend/venv/bin/activate
 ```
 
-Install the package and its dependencies, as defined in `pyproject.toml`:
+uv installs the project in editable mode by default for local development. To include the optional AWS type stubs, add `--extra dev` to the `uv sync` command. When dependencies in `pyproject.toml` change, run `uv lock` and commit the updated `uv.lock`.
 
-```bash
-python -m pip install .
-```
-
-For development, use an editable installation instead:
-
-```bash
-python -m pip install -e .
-```
+Unlike `uv sync`, a direct `pip install .` does not use `uv.lock` and may resolve different dependency versions.
 
 ### Configuration
 
@@ -187,7 +180,9 @@ See the [frontend README](frontend/README.md) for frontend configuration, API in
 
 ## Run with Docker Compose
 
-Docker Compose runs the FastAPI backend and Next.js frontend in separate containers.
+Docker Compose runs the FastAPI backend and Next.js frontend in separate containers. The backend uses a two-stage Docker build: uv installs the dependencies locked in `uv.lock` and the packaged application into `/opt/venv`; the runtime image copies this environment and runs without uv as a non-root user. The backend Dockerfile obtains uv from its official container image during the build. Therefore, uv does not need to be installed locally when running the application through Docker Compose.
+
+The lockfile fixes Python dependency versions; the `python:3.12-slim` base-image tag may still receive updates between builds.
 
 ### Prerequisites
 
@@ -274,17 +269,13 @@ Local PDF ingestion is implemented through the CLI. User uploads and automatical
 
 ## Build and Test the Wheel
 
-Build an installable wheel and verify that the packaged application runs correctly in a clean environment.
+Build an installable wheel and verify that the packaged application runs correctly in a clean environment. From the repository root, build the source distribution and wheel into `backend/dist/`:
 
 ```bash
-python -m pip install build
+uv build --out-dir backend/dist
 ```
 
-From the repository root, with `backend/venv` activated, build the source distribution and wheel into `backend/dist/`:
-
-```bash
-python -m build --outdir backend/dist
-```
+This uses the setuptools build backend defined in `pyproject.toml` without requiring pip in `backend/venv`. The standalone wheel installation test below uses pip in a separate test environment and resolves requirements from package metadata; it does not install from `uv.lock`.
 
 Create a fresh test environment outside the repository. Run these commands from the repository root, using a test directory that does not already exist:
 
@@ -383,6 +374,7 @@ employee-hr-assistant/
 ├── compose.yaml
 ├── LICENSE
 ├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
@@ -398,7 +390,7 @@ Contributions are welcome.
    git switch -c feature/my-feature
    ```
 
-2. Make your changes and update the relevant documentation.
+2. Make your changes and update the relevant documentation. If Python dependency requirements change, run `uv lock` and commit the updated `uv.lock`.
 3. Verify the affected functionality. For backend changes, follow the wheel build and testing instructions above. For frontend changes, follow the checks in the [frontend README](frontend/README.md).
 4. Review and stage your changes, then commit your changes:
 

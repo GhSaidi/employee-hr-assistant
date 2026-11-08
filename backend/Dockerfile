@@ -1,11 +1,28 @@
-FROM python:3.12-slim
+# Build stage: install locked Python dependencies.
+FROM python:3.12-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /bin/uv
+
 WORKDIR /app
 
-COPY pyproject.toml README.md LICENSE ./
+ENV UV_PYTHON_DOWNLOADS=0 \
+    UV_NO_CACHE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
+
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY backend/src/ ./backend/src/
 
-RUN python -m pip install --no-cache-dir --upgrade "pip==26.3" \
-    && python -m pip install --no-cache-dir .
+RUN uv sync --locked --no-dev --no-editable
+
+
+# Runtime stage: run the application without uv.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Create a dedicated non-root user.
 RUN groupadd --gid 10001 appuser \
