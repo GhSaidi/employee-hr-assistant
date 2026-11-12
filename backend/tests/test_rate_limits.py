@@ -119,3 +119,31 @@ def test_ecs_rejects_non_dynamodb_modes(
         match="ECS deployments require USAGE_LIMIT_MODE=dynamodb",
     ):
         rate_limits.create_usage_limiter()
+
+
+def test_rejected_requests_do_not_consume_daily_allowance(
+    clock: dict[str, int],
+) -> None:
+    limiter = rate_limits.MemoryUsageLimiter()
+    client_id = "192.0.2.1"
+
+    # Use this minute's three allowed requests.
+    for _ in range(3):
+        limiter.reserve(client_id)
+
+    # Rejected retries must not count toward the daily allowance.
+    for _ in range(10):
+        with pytest.raises(rate_limits.UsageLimitExceeded):
+            limiter.reserve(client_id)
+
+    # Seven more successful requests should still be available today.
+    for number in range(7):
+        clock["now"] = 180 + number * 60
+        limiter.reserve(client_id)
+
+    clock["now"] += 60
+
+    with pytest.raises(rate_limits.UsageLimitExceeded) as caught:
+        limiter.reserve(client_id)
+
+    assert caught.value.retry_after == 86400 - clock["now"]
