@@ -141,9 +141,7 @@ def test_chat_returns_429_when_quota_is_exhausted(
         Mock(return_value=Mock()),
     )
 
-    answer_question = Mock(
-        side_effect=AssertionError("Answer generation must not run")
-    )
+    answer_question = Mock(side_effect=AssertionError("Answer generation must not run"))
     monkeypatch.setattr(
         api_module.direct,
         "answer_question",
@@ -186,9 +184,7 @@ def test_chat_fails_closed_when_quota_store_is_unavailable(
         Mock(return_value=Mock()),
     )
 
-    answer_question = Mock(
-        side_effect=AssertionError("Answer generation must not run")
-    )
+    answer_question = Mock(side_effect=AssertionError("Answer generation must not run"))
     monkeypatch.setattr(
         api_module.direct,
         "answer_question",
@@ -204,8 +200,7 @@ def test_chat_fails_closed_when_quota_store_is_unavailable(
     assert response.headers["Retry-After"] == "5"
     assert response.json() == {
         "detail": (
-            "The demo could not check its usage allowance. "
-            "Please try again shortly."
+            "The demo could not check its usage allowance. Please try again shortly."
         ),
     }
 
@@ -287,9 +282,7 @@ def test_chat_returns_503_when_initialization_fails(
         Mock(side_effect=RuntimeError("Simulated initialization failure")),
     )
 
-    answer_question = Mock(
-        side_effect=AssertionError("Answer generation must not run")
-    )
+    answer_question = Mock(side_effect=AssertionError("Answer generation must not run"))
     monkeypatch.setattr(
         api_module.direct,
         "answer_question",
@@ -440,16 +433,14 @@ def test_chat_rejects_invalid_client_ip_in_ecs(
         Mock(return_value=Mock()),
     )
 
-    answer_question = Mock(
-        side_effect=AssertionError("Answer generation must not run")
-    )
+    answer_question = Mock(side_effect=AssertionError("Answer generation must not run"))
     monkeypatch.setattr(
         api_module.direct,
         "answer_question",
         answer_question,
     )
 
-    headers = {}
+    headers: dict[str, str] = {}
     if client_ip is not None:
         headers["x-client-ip"] = client_ip
 

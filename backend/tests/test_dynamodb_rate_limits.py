@@ -3,12 +3,14 @@ from unittest.mock import Mock
 
 import pytest
 from botocore.exceptions import BotoCoreError, ClientError
+
 from employee_hr_assistant.api import rate_limits
 
 if TYPE_CHECKING:
+    # Reuse botocore's internal stub types to validate simulated AWS errors.
     from botocore.exceptions import (
-        _CancellationReasonTypeDef,
-        _ClientErrorResponseTypeDef,
+        _CancellationReasonTypeDef,  # pyright: ignore[reportPrivateUsage]
+        _ClientErrorResponseTypeDef,  # pyright: ignore[reportPrivateUsage]
     )
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_dynamodb.type_defs import TransactWriteItemTypeDef
@@ -38,9 +40,7 @@ def test_dynamodb_failure_makes_allowance_unavailable(
     error: BotoCoreError | ClientError,
 ) -> None:
     client = Mock()
-    client.exceptions.TransactionCanceledException = (
-        FakeTransactionCanceledException
-    )
+    client.exceptions.TransactionCanceledException = FakeTransactionCanceledException
     client.transact_write_items.side_effect = error
 
     limiter = rate_limits.DynamoDBUsageLimiter(
@@ -70,9 +70,7 @@ def test_dynamodb_quota_rejection(
 ) -> None:
     monkeypatch.setattr(rate_limits, "time", lambda: 120)
 
-    reasons: list[_CancellationReasonTypeDef] = [
-    {"Code": "None"} for _ in range(3)
-    ]
+    reasons: list[_CancellationReasonTypeDef] = [{"Code": "None"} for _ in range(3)]
     reasons[failed_rule] = {"Code": "ConditionalCheckFailed"}
 
     error = FakeTransactionCanceledException(
@@ -87,9 +85,7 @@ def test_dynamodb_quota_rejection(
     )
 
     client = Mock()
-    client.exceptions.TransactionCanceledException = (
-        FakeTransactionCanceledException
-    )
+    client.exceptions.TransactionCanceledException = FakeTransactionCanceledException
     client.transact_write_items.side_effect = error
 
     limiter = rate_limits.DynamoDBUsageLimiter(
@@ -128,9 +124,7 @@ def test_other_transaction_cancellations_make_allowance_unavailable(
     )
 
     client = Mock()
-    client.exceptions.TransactionCanceledException = (
-        FakeTransactionCanceledException
-    )
+    client.exceptions.TransactionCanceledException = FakeTransactionCanceledException
     client.transact_write_items.side_effect = error
 
     limiter = rate_limits.DynamoDBUsageLimiter(
@@ -174,9 +168,7 @@ def test_dynamodb_reserves_all_quotas_in_one_transaction(
         ("client:192.0.2.1:minute:2", 3, 86580),
     ]
 
-    for item, (key, maximum, expires_at) in zip(
-        items, expected_rules, strict=True
-    ):
+    for item, (key, maximum, expires_at) in zip(items, expected_rules, strict=True):
         assert "Update" in item
         update = item["Update"]
 
@@ -189,8 +181,7 @@ def test_dynamodb_reserves_all_quotas_in_one_transaction(
         )
 
         assert update["UpdateExpression"] == (
-            "SET #count = if_not_exists(#count, :zero) + :one, "
-            "#expires = :expires"
+            "SET #count = if_not_exists(#count, :zero) + :one, #expires = :expires"
         )
 
         assert "ExpressionAttributeNames" in update
