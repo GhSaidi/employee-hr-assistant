@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/ci
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+
+    env:
+      UV_PROJECT_ENVIRONMENT: backend/venv
+      UV_PYTHON: "3.12.16"
+      UV_PYTHON_PREFERENCE: only-managed
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.7"
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.12.16
+
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev --group test --group quality
+
+      - name: Check lint rules
+        run: backend/venv/bin/ruff check backend/src backend/tests
+
+      - name: Check formatting
+        run: backend/venv/bin/ruff format --check backend/src backend/tests
+
+      - name: Check types
+        run: backend/venv/bin/pyright --pythonpath backend/venv/bin/python
+
+      - name: Run backend tests
+        run: backend/venv/bin/python -m pytest backend/tests -v
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.2"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check lint rules
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+  docker:
+    name: Docker build (${{ matrix.component }})
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - backend
+          - frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build production image
+        run: |
+          docker build \
+            --platform linux/arm64 \
+            --file ${{ matrix.component }}/Dockerfile \
+            --tag employee-hr-assistant-${{ matrix.component }}:ci \
+            .

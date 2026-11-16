@@ -25,7 +25,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["boto3-stubs-lite[s3,dynamodb]"]
+dev = [
+    "boto3-stubs-lite[s3,dynamodb]",
+    "pip==26.3",
+]
 
 [project.urls]
 Repository = "https://github.com/GhSaidi/employee-hr-assistant"
@@ -36,3 +39,27 @@ hr-assistant = "employee_hr_assistant.main:main"
 
 [tool.setuptools.packages.find]
 where = ["backend/src"]
+
+[dependency-groups]
+quality = [
+    "pyright>=1.1.414",
+    "ruff>=0.17.5",
+]
+test = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
+
+[tool.pyright]
+include = ["backend/src", "backend/tests"]
+extraPaths = ["backend/src"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["backend/src"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

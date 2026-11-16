@@ -105,9 +105,7 @@ class MemoryUsageLimiter:
             }
 
             for rule in rules:
-                count, _ = self._counters.get(
-                    rule.key, (0, rule.reset_at)
-                )
+                count, _ = self._counters.get(rule.key, (0, rule.reset_at))
 
                 if count >= rule.maximum:
                     raise UsageLimitExceeded(
@@ -116,9 +114,7 @@ class MemoryUsageLimiter:
                     )
 
             for rule in rules:
-                count, _ = self._counters.get(
-                    rule.key, (0, rule.reset_at)
-                )
+                count, _ = self._counters.get(rule.key, (0, rule.reset_at))
                 self._counters[rule.key] = (
                     count + 1,
                     rule.reset_at,
@@ -206,9 +202,7 @@ def create_usage_limiter() -> UsageLimiter:
     running_in_ecs = execution_env.startswith("AWS_ECS_")
 
     if running_in_ecs and mode != "dynamodb":
-        raise RuntimeError(
-            "ECS deployments require USAGE_LIMIT_MODE=dynamodb."
-        )
+        raise RuntimeError("ECS deployments require USAGE_LIMIT_MODE=dynamodb.")
 
     if mode == "off":
         return DisabledUsageLimiter()
@@ -217,24 +211,18 @@ def create_usage_limiter() -> UsageLimiter:
         return MemoryUsageLimiter()
 
     if mode != "dynamodb":
-        raise RuntimeError(
-            "USAGE_LIMIT_MODE must be off, memory, or dynamodb."
-        )
+        raise RuntimeError("USAGE_LIMIT_MODE must be off, memory, or dynamodb.")
 
     table_name = os.getenv("USAGE_LIMIT_TABLE", "").strip()
     if not table_name:
-        raise RuntimeError(
-            "USAGE_LIMIT_TABLE is required in dynamodb mode."
-        )
+        raise RuntimeError("USAGE_LIMIT_TABLE is required in dynamodb mode.")
 
     region = (
         os.getenv("AWS_REGION", "").strip()
         or os.getenv("AWS_DEFAULT_REGION", "").strip()
     )
     if not region:
-        raise RuntimeError(
-            "Set AWS_REGION or AWS_DEFAULT_REGION in dynamodb mode."
-        )
+        raise RuntimeError("Set AWS_REGION or AWS_DEFAULT_REGION in dynamodb mode.")
 
     client: DynamoDBClient = boto3.client(
         "dynamodb",

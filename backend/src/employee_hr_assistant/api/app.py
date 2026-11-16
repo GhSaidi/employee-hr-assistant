@@ -46,9 +46,7 @@ def reserve_chat_allowance(http_request: Request) -> None:
     if isinstance(limiter, DisabledUsageLimiter):
         return
 
-    running_in_ecs = os.getenv(
-        "AWS_EXECUTION_ENV", ""
-    ).startswith("AWS_ECS_")
+    running_in_ecs = os.getenv("AWS_EXECUTION_ENV", "").startswith("AWS_ECS_")
 
     if running_in_ecs:
         # Next.js supplies this header after reading the ALB client address.
@@ -107,9 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         return
 
     if not bucket or not key:
-        raise RuntimeError(
-            "Set both CHROMA_S3_BUCKET and CHROMA_S3_KEY, or neither."
-        )
+        raise RuntimeError("Set both CHROMA_S3_BUCKET and CHROMA_S3_KEY, or neither.")
 
     original_database_dir = direct.DATABASE_DIR
 
@@ -162,7 +158,9 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_chat_slot)])
+@app.post(
+    "/chat", response_model=ChatResponse, dependencies=[Depends(require_chat_slot)]
+)
 def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
     try:
         collection = direct.get_indexed_collection()

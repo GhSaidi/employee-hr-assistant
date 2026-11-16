@@ -30,9 +30,7 @@ TOP_K = 4
 
 def get_openai_client() -> OpenAI:
     if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError(
-            "OPENAI_API_KEY is missing. Add it to your .env file."
-        )
+        raise RuntimeError("OPENAI_API_KEY is missing. Add it to your .env file.")
     return OpenAI()
 
 
@@ -47,7 +45,7 @@ def split_into_chunks(text: str) -> list[str]:
 
     chunks: list[str] = []
     for start in range(0, len(words), step):
-        chunk = " ".join(words[start:start + CHUNK_WORDS])
+        chunk = " ".join(words[start : start + CHUNK_WORDS])
         if chunk:
             chunks.append(chunk)
 
@@ -70,9 +68,7 @@ def read_pdfs() -> Generator[tuple[str, dict[str, str | int]], None, None]:
                 page = pdf[page_index]
                 text = cast(str, page.get_text("text"))  # pyright: ignore[reportUnknownMemberType]
 
-                for chunk_number, chunk in enumerate(
-                    split_into_chunks(text), start=1
-                ):
+                for chunk_number, chunk in enumerate(split_into_chunks(text), start=1):
                     yield (
                         chunk,
                         {
@@ -94,7 +90,7 @@ def create_embeddings(client: OpenAI, texts: list[str]) -> list[list[float]]:
 def index_documents():
     openai_client = get_openai_client()
     chroma_client = get_chroma_client()
- 
+
     records: list[tuple[str, dict[str, str | int]]] = list(read_pdfs())
     if not records:
         raise RuntimeError(
@@ -114,18 +110,13 @@ def index_documents():
     )
 
     for start in range(0, len(records), EMBEDDING_BATCH_SIZE):
-        batch = records[start:start + EMBEDDING_BATCH_SIZE]
+        batch = records[start : start + EMBEDDING_BATCH_SIZE]
 
         texts = [text for text, _ in batch]
-        metadatas = [
-            cast(chromadb.Metadata, metadata) for _, metadata in batch
-        ]
+        metadatas = [cast(chromadb.Metadata, metadata) for _, metadata in batch]
         embeddings = cast(PyEmbeddings, create_embeddings(openai_client, texts))
 
-        ids = [
-            f"{start + offset}"
-            for offset in range(len(batch))
-        ]
+        ids = [f"{start + offset}" for offset in range(len(batch))]
 
         collection.add(
             ids=ids,
@@ -161,9 +152,7 @@ def answer_question(
     metadatas = metadata_results[0]
 
     passages: list[str] = []
-    for number, (document, metadata) in enumerate(
-        zip(documents, metadatas), start=1
-    ):
+    for number, (document, metadata) in enumerate(zip(documents, metadatas), start=1):
         passages.append(
             f"[{number}] Source: {metadata['source']}, "
             f"page {metadata['page']}\n{document}"
@@ -196,20 +185,14 @@ def get_indexed_collection() -> chromadb.Collection:
     try:
         collection = chroma_client.get_collection(COLLECTION_NAME)
     except NotFoundError as exc:
-        raise RuntimeError(
-            "No index found. Run: hr-assistant index"
-        ) from exc
+        raise RuntimeError("No index found. Run: hr-assistant index") from exc
 
     if collection.count() == 0:
-        raise RuntimeError(
-            "The index is empty. Run: hr-assistant index"
-        )
+        raise RuntimeError("The index is empty. Run: hr-assistant index")
 
     metadata = collection.metadata or {}
     if metadata.get("embedding_model") != EMBEDDING_MODEL:
-        raise RuntimeError(
-            "The embedding model has changed. Run: hr-assistant index"
-        )
+        raise RuntimeError("The embedding model has changed. Run: hr-assistant index")
 
     return collection
 
@@ -228,14 +211,9 @@ def chat():
         if not question:
             continue
 
-        answer, sources = answer_question(
-            question, collection, openai_client
-        )
+        answer, sources = answer_question(question, collection, openai_client)
 
         print(f"\nAnswer:\n{answer}\n")
         print("Retrieved sources:")
         for number, metadata in enumerate(sources, start=1):
-            print(
-                f"[{number}] {metadata['source']}, "
-                f"page {metadata['page']}"
-            )
+            print(f"[{number}] {metadata['source']}, page {metadata['page']}")

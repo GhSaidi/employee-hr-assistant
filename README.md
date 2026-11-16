@@ -97,7 +97,9 @@ UV_PROJECT_ENVIRONMENT=backend/venv uv sync --locked --no-dev
 source backend/venv/bin/activate
 ```
 
-uv installs the project in editable mode by default for local development. To include the optional AWS type stubs, add `--extra dev` to the `uv sync` command. When dependencies in `pyproject.toml` change, run `uv lock` and commit the updated `uv.lock`.
+uv installs the project in editable mode by default for local development. The optional `dev` extra includes AWS type stubs and pip for editor package discovery. For development with tests, Ruff, and Pyright, use the synchronization command in [Automated Checks and CI](#automated-checks-and-ci).
+
+When dependencies in `pyproject.toml` change, run `uv lock` and commit the updated `uv.lock`.
 
 Unlike `uv sync`, a direct `pip install .` does not use `uv.lock` and may resolve different dependency versions.
 
@@ -267,6 +269,58 @@ docker compose up -d
 
 Local PDF ingestion is implemented through the CLI. User uploads and automatically triggered ingestion are planned for a later stage.
 
+## Automated Checks and CI
+
+### Run Checks Locally
+
+Run these commands from the repository root on Linux or macOS.
+
+Install the locked backend dependencies, including development tools, test dependencies, and AWS type stubs:
+
+```bash
+UV_PROJECT_ENVIRONMENT=backend/venv uv sync --locked --extra dev --group test --group quality
+```
+
+This synchronizes `backend/venv`. Include these groups when synchronizing a development environment to retain the testing and quality tools.
+
+Run backend linting, formatting verification, strict type checking, and tests:
+
+```bash
+backend/venv/bin/ruff check backend/src backend/tests
+backend/venv/bin/ruff format --check backend/src backend/tests
+backend/venv/bin/pyright --pythonpath backend/venv/bin/python
+backend/venv/bin/python -m pytest backend/tests -v
+```
+
+The lint and formatting commands check files without modifying them.
+
+The backend suite covers in-memory quotas, mocked DynamoDB transactions and failures, and FastAPI request handling. API tests exercise validation, responses, error handling, concurrency slots, and client-IP handling with external dependencies mocked.
+
+Install the locked frontend dependencies and run linting and a production build:
+
+```bash
+npm --prefix frontend ci
+npm --prefix frontend run lint
+npm --prefix frontend run build
+```
+
+Frontend behavioral tests are not yet implemented.
+
+### GitHub Actions
+
+The workflow in [`.github/workflows/ci.yaml`](.github/workflows/ci.yaml) runs on pushes to `main` and `feature/ci`, and on pull requests targeting `main`.
+
+It runs four jobs on Ubuntu ARM64 runners:
+
+- Backend linting, formatting verification, strict type checking, and tests.
+- Frontend linting and a production build.
+- Backend production Docker image build for `linux/arm64`.
+- Frontend production Docker image build for `linux/arm64`.
+
+Python and frontend dependencies are installed from `uv.lock` and `frontend/package-lock.json`, respectively. Docker base-image tags can still receive updates between builds.
+
+The workflow requires no application secrets. Docker checks verify image builds; they do not start the containers, publish images, or deploy the application.
+
 ## Build and Test the Wheel
 
 Build an installable wheel and verify that the packaged application runs correctly in a clean environment. From the repository root, build the source distribution and wheel into `backend/dist/`:
@@ -343,6 +397,9 @@ Indexing rebuilds the test database and makes OpenAI embedding API requests, whi
 
 ```text
 employee-hr-assistant/
+├── .github/
+│   └── workflows/
+│       └── ci.yaml
 ├── backend/
 │   ├── src/
 │   │   └── employee_hr_assistant/
@@ -356,6 +413,10 @@ employee-hr-assistant/
 │   │       │   └── direct.py
 │   │       ├── __init__.py
 │   │       └── main.py
+│   ├── tests/
+│   │   ├── test_api.py
+│   │   ├── test_dynamodb_rate_limits.py
+│   │   └── test_rate_limits.py
 │   ├── .env.example
 │   └── Dockerfile
 ├── data/
@@ -391,7 +452,7 @@ Contributions are welcome.
    ```
 
 2. Make your changes and update the relevant documentation. If Python dependency requirements change, run `uv lock` and commit the updated `uv.lock`.
-3. Verify the affected functionality. For backend changes, follow the wheel build and testing instructions above. For frontend changes, follow the checks in the [frontend README](frontend/README.md).
+3. Run the relevant checks described in [Automated Checks and CI](#automated-checks-and-ci). For changes affecting Python packaging, also follow [Build and Test the Wheel](#build-and-test-the-wheel). Add or update tests for changed behavior.
 4. Review and stage your changes, then commit your changes:
 
    ```bash
