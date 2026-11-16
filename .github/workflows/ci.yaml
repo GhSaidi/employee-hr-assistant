@@ -19,7 +19,7 @@ concurrency:
 jobs:
   backend:
     name: Backend checks
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
 
     env:
@@ -59,7 +59,7 @@ jobs:
 
   frontend:
     name: Frontend checks
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
 
     defaults:
@@ -90,3 +90,29 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+  docker:
+    name: Docker build (${{ matrix.component }})
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - backend
+          - frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build production image
+        run: |
+          docker build \
+            --platform linux/arm64 \
+            --file ${{ matrix.component }}/Dockerfile \
+            --tag employee-hr-assistant-${{ matrix.component }}:ci \
+            .
