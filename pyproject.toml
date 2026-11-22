@@ -63,3 +63,7 @@ src = ["backend/src"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pytest.ini_options]
+# Keep test collection away from the local secrets file.
+addopts = ["--ignore=backend/.env"]
