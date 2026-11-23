@@ -1,0 +1,3 @@
+# Claude Code guardrail scripts are tooling, not application code:
+# keep them out of GitHub's language statistics.
+.claude/** linguist-detectable=false

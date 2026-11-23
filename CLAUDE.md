@@ -75,6 +75,7 @@ Tests must never hit OpenAI, AWS, the real index, or the local `.env`. `test_api
 - **Hooks** (`.claude/hooks/`): `protect-files.sh` confines file tools to the project, `~/.claude` and Claude Code's temp folder, and blocks secrets and write-protected files. `validate-commands.sh` blocks deletions and other risky Bash patterns, and forces a prompt for Docker, commits, pushes and paths outside the project. Both fail closed and target `/bin/bash` 3.2.
 - **Sandbox**: Bash runs in the OS sandbox with regular permission prompts. Writes are limited to the project, the temp folder and the uv/npm caches. `~/Documents`, `~/Desktop` and `~/Downloads` are unreadable, except the project itself. Network access is limited to package registries, GitHub and Google Fonts; `api.openai.com` is always denied. `docker` runs outside the sandbox.
 - **Testing the guardrails**: `bash .claude/hooks/test-hooks.sh`, run by a human from the repository root (Claude's own Bash hook blocks it). The tested commands are strings and are never executed. Live tests of destructive commands only target throwaway files in a temp directory, never real files or secrets.
+- **Language stats**: `.gitattributes` marks `.claude/**` as `linguist-detectable=false`, so GitHub's language bar reflects the application code, not the guardrail scripts.
 
 Known sandbox limitations:
 - `npm run build` fails inside the sandbox: `next/font/google` downloads fonts with networking code that ignores the sandbox proxy. Run frontend builds outside the sandbox (approved per command). `npm run lint` works sandboxed.
